@@ -59,8 +59,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# Save the content to main.py
-with open('main.py', 'w', encoding='utf-8') as f:
-    f.write(In[len(In)-1])
-print('main.py has been created successfully.')
