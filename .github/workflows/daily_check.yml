@@ -2,8 +2,11 @@ name: Stock Yield Check
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
-  workflow_dispatch:      # Allows manual trigger
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write  #  画像を保存するために必須
 
 jobs:
   check-stocks:
@@ -26,41 +29,14 @@ jobs:
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
-          GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+          GITHUB_USERNAME: "poohredtem"
+          GITHUB_REPOSITORY: "my-image"
         run: python main.py
 
-      - name: Archive plots for deployment
-        uses: actions/upload-artifact@v4
-        with:
-          name: stock-plots
-          path: plots/
-
-  # Job to deploy generated plots to GitHub Pages
-  deploy-pages:
-    needs: check-stocks # This job runs after 'check-stocks' completes
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write      # Grant GITHUB_TOKEN the permissions to deploy to GitHub Pages
-      id-token: write   # Grant GITHUB_TOKEN to fetch the OIDC token for actions/deploy-pages
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Download stock-plots artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: stock-plots
-          path: _site # Download plots into a _site directory, required for GitHub Pages
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: '_site' # Upload the _site directory (containing plots)
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Save plots to repository
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add plots/
+          git commit -m "Update stock plots" || echo "No changes"
+          git push
