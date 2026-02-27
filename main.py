@@ -88,8 +88,7 @@ def main():
                     plt.legend()
                     plt.tight_layout()
                     plt.savefig(plot_filename)
-                    plt.close()
-                    plot_files.append(plot_filename) # プロットファイルをリストに追加
+                    plt.close() # Close the plot to free memory
 
                 buy_signals.append(f'・{symbol}: 利回り{current_yield:.2f}% (目標:{TARGET_YIELD}%)\n  (価格:{latest_price:.1f}円 / 配当:{dividend_per_share}円) {undervalued_status}')
 
@@ -135,8 +134,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# Save the content to main.py
-with open('main.py', 'w', encoding='utf-8') as f:
-    f.write(In[len(In)-1])
-print('main.py has been updated successfully with GitHub Pages image URL construction and LINE ImageMessage logic.')
