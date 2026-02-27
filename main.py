@@ -1,15 +1,16 @@
 import os
+import time # 👈 おまじない（タイムスタンプ）のために追加
 import pandas as pd
 import yfinance as ticker
-from linebot.v3.messaging import Configuration, ApiClient, MessagingApi, PushMessageRequest, TextMessage, ImageMessage # ImageMessage を追加
+from linebot.v3.messaging import Configuration, ApiClient, MessagingApi, PushMessageRequest, TextMessage, ImageMessage
 import matplotlib.pyplot as plt
 
 def main():
     # --- Configuration from Environment Variables ---
     CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
     USER_ID = os.getenv('LINE_USER_ID')
-    GITHUB_USERNAME = os.getenv('GITHUB_USERNAME') # New environment variable
-    GITHUB_REPOSITORY = os.getenv('GITHUB_REPOSITORY') # New environment variable
+    GITHUB_USERNAME = os.getenv('GITHUB_USERNAME')
+    GITHUB_REPOSITORY = os.getenv('GITHUB_REPOSITORY')
     CSV_FILE = './assetbalance(JP)_20260220_201541.csv'
     TARGET_YIELD = 3.5
 
@@ -28,7 +29,7 @@ def main():
         codes = []
 
     buy_signals = []
-    plot_files = [] # 生成されたプロットファイルのリストを保持
+    plot_files = []
 
     for symbol in codes:
         try:
@@ -50,11 +51,9 @@ def main():
 
                 for year in years_in_history:
                     yearly_data = historical_data[historical_data.index.year == year]
-
                     if not yearly_data.empty:
                         yearly_dividends_sum = yearly_data['Dividends'].sum()
                         yearly_avg_price = yearly_data['Close'].mean()
-
                         if yearly_avg_price > 0:
                             yearly_yield = (yearly_dividends_sum / yearly_avg_price) * 100
                             historical_yields_list.append(yearly_yield)
@@ -89,7 +88,7 @@ def main():
                     plt.tight_layout()
                     plt.savefig(plot_filename)
                     plot_files.append(plot_filename)
-                    plt.close() # Close the plot to free memory
+                    plt.close()
 
                 buy_signals.append(f'・{symbol}: 利回り{current_yield:.2f}% (目標:{TARGET_YIELD}%)\n  (価格:{latest_price:.1f}円 / 配当:{dividend_per_share}円) {undervalued_status}')
 
@@ -100,7 +99,6 @@ def main():
     if buy_signals:
         try:
             configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
-            
             messages_to_send = []
 
             # テキストメッセージ
@@ -112,13 +110,15 @@ def main():
             # 画像メッセージ（GitHub PagesのURLを構築）
             if GITHUB_USERNAME and GITHUB_REPOSITORY:
                 base_url = f'https://{GITHUB_USERNAME}.github.io/{GITHUB_REPOSITORY}/plots/'
+                timestamp = int(time.time()) # 👈 ここでおまじないの種を生成
+                
                 for plot_file in plot_files[:4]:
                     image_filename = os.path.basename(plot_file)
-                    image_public_url = f'{base_url}{image_filename}'
+                    # 👇 末尾に ?t={timestamp} を追加（おまじない完了）
+                    image_public_url = f'{base_url}{image_filename}?t={timestamp}'
                     messages_to_send.append(ImageMessage(original_content_url=image_public_url, preview_image_url=image_public_url))
             else:
-                print("Warning: GITHUB_USERNAME or GITHUB_REPOSITORY not set. Cannot construct public image URLs.")
-
+                print("Warning: GITHUB_USERNAME or GITHUB_REPOSITORY not set.")
 
             with ApiClient(configuration) as api_client:
                 line_bot_api = MessagingApi(api_client)
