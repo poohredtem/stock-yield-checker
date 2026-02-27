@@ -112,7 +112,7 @@ def main():
             # 画像メッセージ（GitHub PagesのURLを構築）
             if GITHUB_USERNAME and GITHUB_REPOSITORY:
                 base_url = f'https://{GITHUB_USERNAME}.github.io/{GITHUB_REPOSITORY}/plots/'
-                for plot_file in plot_files:
+                for plot_file in plot_files[:4]:
                     image_filename = os.path.basename(plot_file)
                     image_public_url = f'{base_url}{image_filename}'
                     messages_to_send.append(ImageMessage(original_content_url=image_public_url, preview_image_url=image_public_url))
