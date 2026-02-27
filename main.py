@@ -88,6 +88,7 @@ def main():
                     plt.legend()
                     plt.tight_layout()
                     plt.savefig(plot_filename)
+                    plot_files.append(plot_filename)
                     plt.close() # Close the plot to free memory
 
                 buy_signals.append(f'・{symbol}: 利回り{current_yield:.2f}% (目標:{TARGET_YIELD}%)\n  (価格:{latest_price:.1f}円 / 配当:{dividend_per_share}円) {undervalued_status}')
