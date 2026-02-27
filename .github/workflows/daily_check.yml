@@ -41,5 +41,5 @@ jobs:
           git commit -m "Update stock plots" || echo "No changes"
           git push
 
-      - name: Save plots to repository
+      - name: Wait for Pages deployment
         run: sleep 60
