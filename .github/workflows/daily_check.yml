@@ -30,7 +30,7 @@ jobs:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
           GITHUB_USERNAME: "poohredtem"
-          GITHUB_REPOSITORY: "my-image"
+          GITHUB_REPOSITORY: "stock-yield-checker"
         run: python main.py
 
       - name: Save plots to repository
@@ -40,3 +40,6 @@ jobs:
           git add plots/
           git commit -m "Update stock plots" || echo "No changes"
           git push
+
+      - name: Save plots to repository
+        run: sleep 60
