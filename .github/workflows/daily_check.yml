@@ -2,21 +2,18 @@ name: Stock Yield Check
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
-
-permissions:
-  contents: write
+    - cron: '0 0 * * *'  # 毎日日本時間午前9時
+  workflow_dispatch:      # 手動実行ボタン
 
 jobs:
   check-stocks:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -24,26 +21,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas yfinance line-bot-sdk matplotlib
+          pip install pandas yfinance line-bot-sdk gspread google-auth
 
-      - name: Generate stock plots
-        run: python main.py
-
-      - name: Commit and push plots
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add plots/
-          git commit -m "update plots" || echo "no changes"
-          git push
-
-      - name: Wait for GitHub Pages
-        run: sleep 60
-
-      - name: Send LINE notification
+      - name: Run stock yield monitor
         env:
+          # LINE通知用
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-          GITHUB_USERNAME: "poohredtem"
-          GITHUB_REPOSITORY: "stock-yield-checker"
-        run: python send_line.py
+          # Googleスプレッドシート用（新しく追加）
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_URL: ${{ secrets.SPREADSHEET_URL }}
+        run: python main.py
