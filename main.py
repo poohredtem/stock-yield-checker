@@ -16,9 +16,9 @@ def main():
     CSV_FILE = './assetbalance(JP)_20260220_201541.csv'
     TARGET_YIELD = 3.5
 
-    # 必須変数のチェック
+    # 全ての環境変数が揃っているかチェック
     if not all([CHANNEL_ACCESS_TOKEN, USER_ID, SERVICE_ACCOUNT_JSON, SPREADSHEET_URL]):
-        print('Error: Required environment variables are missing.')
+        print('Error: 設定（Secrets）が足りません。GitHubのSettingsを確認してください。')
         return
 
     try:
@@ -29,7 +29,7 @@ def main():
         sh = gc.open_by_url(SPREADSHEET_URL)
         worksheet = sh.get_worksheet(0) # 一番左のシート
     except Exception as e:
-        print(f'Google Sheets Auth Error: {e}')
+        print(f'Google Sheets 認証エラー: {e}')
         return
 
     # --- 2. CSVから銘柄抽出 ---
@@ -37,7 +37,7 @@ def main():
         df = pd.read_csv(CSV_FILE, encoding='shift_jis', skiprows=6, on_bad_lines='skip')
         codes = [str(code) + '.T' for code in df['銘柄コード'].unique() if str(code).isdigit()]
     except Exception as e:
-        print(f'CSV reading error: {e}')
+        print(f'CSV読み込みエラー: {e}')
         codes = []
 
     # --- 3. 分析とデータ作成 ---
@@ -45,7 +45,7 @@ def main():
     rows_to_append = []
     now = pd.Timestamp.now(tz='Asia/Tokyo').strftime('%Y-%m-%d %H:%M')
 
-    print(f'Checking {len(codes)} stocks...')
+    print(f'{len(codes)}件の銘柄をチェック中...')
 
     for symbol in codes:
         try:
@@ -59,28 +59,28 @@ def main():
 
             if div_rate > 0:
                 current_yield = (div_rate / latest_price) * 100
-                # スプレッドシート用の1行データを作成
+                # スプレッドシート用のデータ
                 rows_to_append.append([now, symbol, round(latest_price, 1), div_rate, round(current_yield, 2)])
                 
                 if current_yield >= TARGET_YIELD:
                     buy_signals.append(f'・{symbol}: 利回り{current_yield:.2f}%\n  (価格:{latest_price:.1f}円 / 配当:{div_rate}円)')
         except Exception as e:
-            print(f'Skipping {symbol}: {e}')
+            print(f'スキップ {symbol}: {e}')
 
     # --- 4. スプレッドシートへの書き出し ---
     if rows_to_append:
         try:
             worksheet.append_rows(rows_to_append)
-            print(f'✅ {len(rows_to_append)} rows added to Spreadsheet!')
+            print(f'✅ スプレッドシートに {len(rows_to_append)} 件追加しました！')
         except Exception as e:
-            print(f'Spreadsheet update error: {e}')
+            print(f'スプレッドシート更新エラー: {e}')
 
     # --- 5. LINE通知 ---
     if buy_signals:
         try:
             configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
             message_text = f'📢【利回り{TARGET_YIELD}%超え銘柄】\n\n' + '\n'.join(buy_signals)
-            message_text += f'\n\n📊 詳細はこちら\n{SPREADSHEET_URL}'
+            message_text += f'\n\n📊 スプレッドシートを確認\n{SPREADSHEET_URL}'
 
             with ApiClient(configuration) as api_client:
                 line_bot_api = MessagingApi(api_client)
@@ -89,11 +89,11 @@ def main():
                     messages=[TextMessage(text=message_text)]
                 )
                 line_bot_api.push_message(push_message_request)
-            print('✅ LINE notification sent!')
-        else:
-            print(f'☕️ No stocks hit the target yield ({TARGET_YIELD}%).')
-    except Exception as e:
-        print(f'LINE transmission error: {e}')
+            print('✅ LINE通知を送信しました！')
+        except Exception as e:
+            print(f'LINE送信エラー: {e}')
+    else:
+        print(f'☕️ 利回り{TARGET_YIELD}%超えの銘柄はありませんでした。')
 
 if __name__ == '__main__':
     main()
